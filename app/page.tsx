@@ -41,8 +41,7 @@ export default function Home() {
       
       if (res.ok) {
         const data = await res.json();
-        router.push(`/sessions/${sessionId}`);
-        query: { userName: UserName }
+        router.push(`/sessions/${sessionId}?userName=${encodeURIComponent(UserName)}`);
       } else {
         alert("Session not found. Please create a new session.");
       }

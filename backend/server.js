@@ -9,7 +9,8 @@ dotenv.config();
 
 const app = express();
 import Session from './models/session.js';
-
+app.use(express.json({ limit: "50mb" })); 
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -40,10 +41,13 @@ app.post("/create-room", async (req, res) => {
 
   });
   app.post("/save-session", async (req, res) => {
-    const {sessionId,paths} = req.body; 
+    const {sessionId,paths,Messages} = req.body; 
     const sessionexists = await Session.findOne({sessionId}); 
     if (sessionexists) {
       sessionexists.drawings.push(...paths);
+      if( sessionexists.messages.length != Messages.length){
+        sessionexists.messages.push(...Messages)
+      }
     }
     await sessionexists.save();
 
@@ -82,6 +86,10 @@ app.post("/create-room", async (req, res) => {
   
     socket.on("senddrawing", (data) => {
       socket.to(data.sessionId).emit("draw", data); 
+    });
+
+    socket.on("sendtext", (data1) => {
+      socket.to(data1.sessionId).emit("sendtext", data1); 
     });
     
   

@@ -1,4 +1,5 @@
 import { useRouter } from "next/navigation";
+import {useState} from "react";
 
 interface Point {
   x: number;
@@ -14,10 +15,15 @@ interface PathData {
   textdimension?: [number, number];
   text?: string;
 }
+interface Mess {
+  user: string;
+  text: string;
+}
 
-export function useSessionManagement(sessionId: string, paths: PathData[]) {
+export function useSessionManagement(sessionId: string, paths: PathData[],
+  setPaths: React.Dispatch<React.SetStateAction<PathData[]>>, Messages: Mess[],
+  setMessages: React.Dispatch<React.SetStateAction<Mess[]>>,setOldMessages: React.Dispatch<React.SetStateAction<Mess[]>>) {
   const router = useRouter();
-  
   const handlesave = async () => {
     console.log("Saving session with paths:", paths);
   
@@ -26,15 +32,18 @@ export function useSessionManagement(sessionId: string, paths: PathData[]) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ sessionId, paths }),
+      body: JSON.stringify({ sessionId, paths , Messages}),
     });
     
     if (res.ok) {
       alert("Session saved successfully!");
-      console.log('Session saved successfully');
+      if (Messages.length>0){
+        setOldMessages((prevOldMessages) => [...prevOldMessages, ...Messages]);
+      }
+      setMessages([]),
+      setPaths([])
     } else {
       alert("Failed to save session. Please try again later.");
-      console.error('Failed to save session');
     }
   };
   
@@ -44,6 +53,10 @@ export function useSessionManagement(sessionId: string, paths: PathData[]) {
   
   return {
     handlesave,
-    exit
+    exit,
+    paths,
+    setPaths,
+    Messages,
+    setMessages,
   };
 }

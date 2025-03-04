@@ -6,18 +6,35 @@ import ColorPicker from "../../components/ColorPicker";
 import { useCanvasDrawing } from "../../hooks/useCanvasDrawing";
 import { useToolSelection } from "../../hooks/useToolSelection";
 import { useSessionManagement } from "../../hooks/useSessionManagement";
+// import { useMessage } from "../../hooks/useMessage";
 import { io, Socket } from "socket.io-client";
 import { useState } from "react";
+import { useSearchParams } from 'next/navigation';
 
 
 export default function SessionPage({ params }: { params: { id: string } }) {
   const { id: sessionId} = (params);
+  const searchParams = useSearchParams();
+  const userName = searchParams.get("userName");
   const canvasRef = useRef<HTMLCanvasElement|null>(null);
   const router = useRouter();
   const socketRef = useRef<Socket | null>(null);
+  const [Message,setMessage]=useState("");
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  interface Mess {
+    user: string;
+    text: string;
+  }
+  const [Messages,setMessages]=useState<Mess[]>([]);
+  const [oldMessages,setOldMessages]=useState<Mess[]>([]);
+  
   useEffect(() => {
       socketRef.current = io(process.env.PORT ||"http://localhost:5000");
       socketRef.current.emit("join-room", sessionId);
+      socketRef.current.on("sendtext",(data1)=>{
+        setMessages((prevMessages) => [...prevMessages, data1.Message]);
+      });
       socketRef.current.on("draw",(data)=>{
           const canvas = canvasRef.current;
           if (!canvas) return;
@@ -63,6 +80,9 @@ export default function SessionPage({ params }: { params: { id: string } }) {
                 setPaths(data.drawings);
                 renderSavedPaths(data.drawings);
               }
+              if (data.messages && data.messages.length > 0) {
+                setOldMessages(data.messages);
+              }
             }
           } catch (error) {
             console.error("Error fetching saved paths:", error);
@@ -78,8 +98,9 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     
       };
     }, [sessionId]);
-
-    const [Message,setMessage]=useState("");
+    useEffect(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [oldMessages, Messages]);
 
 
   const {
@@ -88,12 +109,24 @@ export default function SessionPage({ params }: { params: { id: string } }) {
   const {
     isDrawing,istexting,startPos,paths,setPaths,text,setText,renderSavedPaths,startdrawing,draw,stopDrawing,handletextsubmit} = useCanvasDrawing(canvasRef, socketRef, sessionId, selecttool, currentColor);
   
-  const { handlesave, exit } = useSessionManagement(sessionId, paths);
+  const { handlesave, exit } = useSessionManagement(sessionId, paths, setPaths, Messages, setMessages,setOldMessages);
   
+  const handleMessagesubmit = (e: React.FormEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    if (!Message.trim()) return;
+  
+    const messageData = { user: userName || "Unknown", text: Message };
+    setMessages((prev) => [...prev, messageData]); 
+    socketRef.current?.emit("sendtext", {
+      sessionId: sessionId,
+      Message: messageData
+    });
+    setMessage(""); 
+  };
   return (
     <div
       style={{
-        width: "100%",minHeight: "100vh",background: "white",display: "flex",flexDirection: "row",padding: "15px",}}>
+        width: "100%",minHeight: "100vh",background: "white",display: "flex",flexDirection: "row",padding: "15px"}}>
       <div style={{
         width: "80px",minHeight: "20vh",background: '#5F6273',display: "flex",flexDirection: "column",alignItems: "center",padding: "10px 10px 10px 10px",boxShadow: "2px 0 5px rgba(0, 0, 0, 0.2)",}}>
       {tools.map((tool) => (
@@ -135,7 +168,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
       )}
         <div
     style={{
-      display: "flex",width: "100%",minHeight: "80vh",background: "#dadfe1",padding:"15px", flexDirection:"row",gap:"20px"
+      display: "flex",maxWidth:"800vh",minHeight: "80vh",background: "#dadfe1",padding:"15px", flexDirection:"row",gap:"20px",flexGrow:"0"
     }}
   >
   <canvas
@@ -147,7 +180,8 @@ export default function SessionPage({ params }: { params: { id: string } }) {
       border: "2px solid rgb(14, 13, 13)",
       boxShadow: "4px 4px 10px rgba(0, 0, 0, 0.5)",
       background: "white",
-      padding: "10px"
+      padding: "10px",
+      flexGrow:0,
     }}
     onMouseDown={startdrawing}
     onMouseMove={draw}
@@ -169,11 +203,32 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     )
   }
   <div
-      style={{ width: '90%', background: '#9C887D', borderRadius: '50px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', height:'100%',
+      style={{ minWidth: '320px', background: '#9C887D', borderRadius: '50px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', maxHeight:'90vh', overflowY:"auto",
       }}
     > 
+
+     { (oldMessages || Messages) && [...oldMessages, ...Messages].map((msg) => (
+          <div
+            style={{
+              alignSelf:  msg.user === userName ? 'flex-end' : 'flex-start',
+              background: msg.user === userName ?'#5d4037':'#F5F5F5',
+              borderRadius: '20px',
+              padding: '10px 25px',
+              margin: '10px 10px',
+              maxWidth: '80%',
+              wordWrap: 'break-word',
+              color:msg.user === userName ? 'white': "black",
+              fontFamily: 'Jacques Francois',
+              fontSize: '14px',
+            }}
+          > 
+            {msg.user}: <div></div>  
+            {msg.text}
+          </div>
+        
+        ))}
+
     <div style={{ padding:"20px", top:"700px"}}>
-    {/* {UserName} */}
     <input
           type="text"
           value={Message}
@@ -189,10 +244,13 @@ export default function SessionPage({ params }: { params: { id: string } }) {
             outline: 'none',
             background:"white"
           }}
-          onKeyDown={(e)=> e.key ==="Enter" && handletextsubmit()}
+          
+          onKeyDown={(e)=> e.key ==="Enter" && handleMessagesubmit(e)}
         />
         </div>
+        <div ref={messagesEndRef} />
         </div>
+        
     <div style={{display: 'flex', flexDirection: "column",gap:"10px"}}>
     <button
           onClick={handlesave} 

@@ -10,7 +10,7 @@ const sessionSchema = new mongoose.Schema({
   drawings: [
     {
       points: [pointSchema], 
-      tool: { type: String, required: true },
+      tool: { type: String },
       color: { type: String, default:"black" },
       circledimension: { type: [Number], default: undefined }, 
       rectdimension: { type: [Number], default: undefined },
@@ -18,6 +18,13 @@ const sessionSchema = new mongoose.Schema({
       text: { type: String, default: undefined},
     }
   ],
+  messages: [
+    {
+      user: { type: String },
+      text: { type: String },
+      timestamp: { type: Date, default: Date.now },
+    },
+  ]
 });
 
 const Session = mongoose.model('Session', sessionSchema);
