@@ -9,8 +9,9 @@ import { useSessionManagement } from "../../hooks/useSessionManagement";
 import { io, Socket } from "socket.io-client";
 import { useState } from "react";
 
-export default function SessionPage({ params }: { params: { id: string, userName: string } }) {
-  const { id: sessionId , userName: UserName} = (params);
+
+export default function SessionPage({ params }: { params: { id: string } }) {
+  const { id: sessionId} = (params);
   const canvasRef = useRef<HTMLCanvasElement|null>(null);
   const router = useRouter();
   const socketRef = useRef<Socket | null>(null);
@@ -172,7 +173,7 @@ export default function SessionPage({ params }: { params: { id: string, userName
       }}
     > 
     <div style={{ padding:"20px", top:"700px"}}>
-    {UserName}
+    {/* {UserName} */}
     <input
           type="text"
           value={Message}
