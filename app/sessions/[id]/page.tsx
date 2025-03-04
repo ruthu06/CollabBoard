@@ -51,6 +51,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
               ctx.moveTo(data.startX, data.startY);
               ctx.lineTo(data.endX, data.endY);
               ctx.stroke();
+              ctx.lineWidth=2
             }
           else if (data.tool=="Circle"){
             ctx.strokeStyle=data.color;
