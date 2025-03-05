@@ -74,6 +74,20 @@ app.post("/create-room", async (req, res) => {
       });
     }
   });
+  app.post('/clear-session', async (req, res) => {
+    const { sessionId } = req.body;
+
+    try {
+        await Session.updateOne(
+            { sessionId }, 
+            { $set: { drawings: [] } } 
+        );
+        res.json({ success: true, message: "Canvas cleared successfully!" });
+    } catch (error) {
+        console.error("Error clearing session:", error);
+        res.status(500).json({ success: false, message: "Failed to clear session" });
+    }
+});
   
 
   io.on("connection", (socket) => {

@@ -71,6 +71,9 @@ export default function SessionPage({ params }: { params: { id: string } }) {
             ctx.fillText(data.Text, data.startX, data.startY);
     
           }
+          else if (data.tool=="clear"){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
         })
         const fetchSavedPaths = async () => {
           try {
@@ -108,7 +111,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     activeTool,setActiveTool,selecttool,setselecttool,currentColor,setCurrentColor,tools} = useToolSelection();
 
   const {
-    isDrawing,istexting,startPos,paths,setPaths,text,setText,renderSavedPaths,startdrawing,draw,stopDrawing,handletextsubmit} = useCanvasDrawing(canvasRef, socketRef, sessionId, selecttool, currentColor);
+    isDrawing,istexting,startPos,paths,setPaths,text,setText,renderSavedPaths,startdrawing,draw,stopDrawing,handletextsubmit,clear} = useCanvasDrawing(canvasRef, socketRef, sessionId, selecttool, currentColor);
   
   const { handlesave, exit } = useSessionManagement(sessionId, paths, setPaths, Messages, setMessages,setOldMessages);
   
@@ -261,6 +264,10 @@ export default function SessionPage({ params }: { params: { id: string } }) {
           onClick={exit}
           className="w-20 h-10 px-1 py-0 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition duration-300"
         >Exit</button>
+        <button
+          onClick={clear}
+          className="w-20 h-10 px-1 py-0 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition duration-300"
+        >Clear</button>
     </div>
   </div>      
 </div> 

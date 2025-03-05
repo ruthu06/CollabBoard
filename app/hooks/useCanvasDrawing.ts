@@ -252,7 +252,41 @@ export function useCanvasDrawing(
     setistexting(false);
     setText("");
   };
-  
+
+  const clear = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    socketRef.current?.emit("senddrawing",{
+      sessionId: sessionId,
+      startX:0,
+      startY:0,
+      endX: canvas.width,
+      endY: canvas.height,
+      tool: "clear",
+      color: currentColor
+    });
+    setPaths([]);
+    try {
+      const response = await fetch("http://localhost:5000/clear-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+          console.log("Canvas cleared in MongoDB!");
+      } else {
+          console.error("Failed to clear MongoDB");
+      }
+  } catch (error) {
+      console.error("Error clearing canvas:", error);
+  }
+  }
   return {
     isDrawing,
     istexting,
@@ -266,6 +300,7 @@ export function useCanvasDrawing(
     startdrawing,
     draw,
     stopDrawing,
-    handletextsubmit
+    handletextsubmit,
+    clear
   };
 }
